@@ -8,9 +8,20 @@ from cadastro_livro import (alterar, consultar, consultar_por_id, deletar,
                             inserir)
 
 from cadastro_autor import listar_autores,inserir_autor_bd,alterar_autor_bd, deletar_autor_bd,consultar_autor_por_id_bd
+
 from conexao import conecta_db
 
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+
 app = Flask(__name__)
+
+app.config['JWT_SECRET_KEY'] = 'designcursor' #Use uma chave segura de produção
+jwt = JWTManager(app)
+
+users = {
+     "user1": "password1",
+     "user2": "password2"
+}
 
 @app.route("/livros/<int:id>", methods=["GET"])
 def get_livro(id):
@@ -141,6 +152,27 @@ def inserir_editoras():
     nome = data["nome"]
     inserir_editora_bd(conexao,nome)
     return jsonify(data)
+
+@app.route('/login', methods = ['POST'])
+def login():
+
+    if not request.is_json:
+        return jsonify({ "msg": "Json inválido!"}), 400
+    
+    username= request.json.get('username',None)
+    password= request.json.get('password',None)
+     
+    #Verificar se os dados do json está no formato válido
+    if not username or not password:
+        return jsonify({ "msg": "Usuário e senha incompleto!"}), 400
+    
+    #Verificar se o usuario existe e a senha está correta
+    if username in users and users[username] == password:
+        access_token = create_access_token (identity=username)
+        return jsonify(access_token = access_token),200
+    else:
+        return jsonify({"msg": "Usuário e senhas inválidos"}), 401
+    
 
 
 if __name__ == "__main__":
